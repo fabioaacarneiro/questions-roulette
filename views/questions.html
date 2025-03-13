@@ -1,0 +1,60 @@
+{{ define "content" }}
+    <h1 class="page-title">{{ .Title }}</h1>
+    <section>
+        <ul class="questions-list">
+            {{ if .Questions }}
+                {{range .Questions}}
+                    <li class="question-item">
+                        <h3 class="question-text"><strong>{{.Question}}</strong></h3>
+
+                        <section class="question-buttons">
+                            <button class="button-update" onclick="document.getElementById('update-dialog-{{.ID}}').showModal()">Atualizar</button>
+                            <dialog id="update-dialog-{{.ID}}">
+                                <form method="POST" action="/questions/update/{{.ID}}">
+                                    <section class="form-input">
+                                        <label for="question"><h3>Pergunta:</h3></label>
+                                        <input type="text" id="question" name="question" required value="{{.Question}}">
+                                    </section>
+                                    <section class="form-buttons">
+                                        <button class="button-confirm" type="submit">Atualizar</button>
+                                        <button class="button-cancel" type="button" onclick="this.closest('dialog').close()">Cancelar</button>
+                                    </section>
+                                </form>
+                            </dialog>
+
+                            <button class="button-delete" onclick="document.getElementById('delete-dialog-{{.ID}}').showModal()">Excluir</button>
+                            <dialog id="delete-dialog-{{.ID}}">
+                                <form method="POST" action="/questions/delete/{{.ID}}">
+                                    <section class="form-input">
+                                        <h3>Tem certeza de que deseja excluir esta pergunta?</h3>
+                                    </section>
+                                    <section class="form-buttons">
+                                        <button class="button-confirm" type="submit">Confirmar</button>
+                                        <button class="button-cancel" type="button" onclick="this.closest('dialog').close()">Cancelar</button>
+                                    </section>
+                                </form>
+                            </dialog>
+                        </section>
+                    </li>
+                {{end}}
+            {{else}}
+                <p>Nenhuma pergunta encontrada.</p>
+            {{ end }}
+        </ul>
+    </section>
+    <section>
+        <button class="store-question" onclick="document.getElementById('store-question').showModal()" id="store-questions">+</button>
+        <dialog id="store-question">
+            <form method="POST" action="/questions/store">
+                <section class="form-input">
+                    <label for="question"><h3>Pergunta:</h3></label>
+                    <input type="text" id="question" name="question" required>
+                </section>
+                <section class="form-buttons">
+                    <button class="button-confirm" type="submit">Cadastrar</button>
+                    <button class="button-cancel" type="button" onclick="this.closest('dialog').close()">Cancelar</button>
+                </section>
+            </form>
+        </dialog>
+    </section>
+{{ end }}
