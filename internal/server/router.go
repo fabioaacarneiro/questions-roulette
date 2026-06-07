@@ -13,9 +13,11 @@ func SetupRoutes(db *sql.DB) {
 
 	// definindo as rotas
 	qh := handler.NewQuestionHandler(db)
-	http.HandleFunc("POST /question/delete/{id}", qh.Delete)
+	http.HandleFunc("DELETE /question/{id}", qh.Delete)
 	http.HandleFunc("POST /question/update/{id}", qh.Update)
 	http.HandleFunc("POST /question/store", qh.Store)
 	http.HandleFunc("GET /question/{id}", qh.GetById)
 	http.HandleFunc("GET /questions", qh.GetList)
+	http.HandleFunc("GET /sort", qh.SortPage)
+	http.HandleFunc("GET /question/sort", qh.Sort)
 }

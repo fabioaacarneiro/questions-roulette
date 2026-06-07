@@ -13,10 +13,11 @@ type questionRepository struct {
 
 type QuestionRepository interface {
 	FindAll() ([]domain.Question, error)
-	Store(question domain.Question) error
+	Store(question domain.Question) (*domain.Question, error)
 	FindById(id int) (*domain.Question, error)
-	Update(id int, question string) error
+	Update(id int, question string) (*domain.Question, error)
 	Delete(id int) error
+	Sort() (domain.Question, error)
 }
 
 func NewQuestionRepository(db *sql.DB) QuestionRepository {
@@ -49,25 +50,26 @@ func (q *questionRepository) FindAll() ([]domain.Question, error) {
 	return questions, nil
 }
 
-func (q *questionRepository) Store(question domain.Question) error {
-	questionModel := domain.Question{
-		Question:  question.Question,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	}
+func (q *questionRepository) Store(question domain.Question) (*domain.Question, error) {
+	query := `
+		INSERT INTO perguntas (pergunta, created_at, updated_at)
+		VALUES ($1, $2, $3)
+		RETURNING id, pergunta, created_at, updated_at, deleted_at`
 
-	query := "INSERT INTO perguntas (pergunta, created_at, updated_at) VALUES ($1, $2, $3)"
-	_, err := q.db.Exec(
-		query,
-		questionModel.Question,
-		questionModel.CreatedAt,
-		questionModel.UpdatedAt,
+	created := &domain.Question{}
+	now := time.Now()
+	err := q.db.QueryRow(query, question.Question, now, now).Scan(
+		&created.ID,
+		&created.Question,
+		&created.CreatedAt,
+		&created.UpdatedAt,
+		&created.DeletedAt,
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return created, nil
 }
 
 func (q *questionRepository) FindById(id int) (*domain.Question, error) {
@@ -88,22 +90,48 @@ func (q *questionRepository) FindById(id int) (*domain.Question, error) {
 	return &question, nil
 }
 
-func (q *questionRepository) Update(id int, question string) error {
-	query := "UPDATE perguntas SET pergunta = $1 WHERE id = $2 AND deleted_at IS NULL"
-	_, err := q.db.Exec(query, question, id)
+func (q *questionRepository) Update(id int, question string) (*domain.Question, error) {
+	query := `
+		UPDATE perguntas
+		SET pergunta = $1, updated_at = $2
+		WHERE id = $3 AND deleted_at IS NULL
+		RETURNING id, pergunta, created_at, updated_at, deleted_at`
+
+	updated := &domain.Question{}
+	err := q.db.QueryRow(query, question, time.Now(), id).Scan(
+		&updated.ID,
+		&updated.Question,
+		&updated.CreatedAt,
+		&updated.UpdatedAt,
+		&updated.DeletedAt,
+	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return updated, nil
 }
 
 func (q *questionRepository) Delete(id int) error {
 	query := "UPDATE perguntas SET deleted_at = $1 WHERE id = $2"
 	_, err := q.db.Exec(query, time.Now(), id)
+	return err
+}
+
+func (q *questionRepository) Sort() (domain.Question, error) {
+	question := domain.Question{}
+
+	query := "SELECT * FROM perguntas WHERE deleted_at IS NULL ORDER BY RANDOM() LIMIT 1"
+	err := q.db.QueryRow(query).Scan(
+		&question.ID,
+		&question.Question,
+		&question.CreatedAt,
+		&question.UpdatedAt,
+		&question.DeletedAt,
+	)
 	if err != nil {
-		return err
+		return question, err
 	}
 
-	return nil
+	return question, nil
 }
